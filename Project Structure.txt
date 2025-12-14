@@ -1,0 +1,35 @@
+proactive-defense-system/
+├── infrastructure/
+│   ├── terraform/           # Infrastructure as Code
+│   ├── kubernetes/          # K8s manifests
+│   └── docker/              # Dockerfiles
+├── data-pipeline/
+│   ├── ingestion/           # Telemetry collectors
+│   ├── processing/          # Stream/batch processing
+│   ├── storage/             # Database schemas
+│   └── feature-store/       # ML features
+├── ml-platform/
+│   ├── models/              # Trained models
+│   ├── training/            # Training pipelines
+│   ├── serving/             # Model serving
+│   └── monitoring/          # Model performance
+├── services/
+│   ├── prediction-service/  # gRPC service
+│   ├── anomaly-service/     # gRPC service  
+│   ├── graph-service/       # REST service
+│   ├── orchestrator/        # AI Agentic
+│   └── api-gateway/         # REST API Gateway
+├── integrations/
+│   ├── siem-connectors/     # Splunk, QRadar, etc.
+│   ├── edr-connectors/      # CrowdStrike, SentinelOne
+│   ├── firewall-connectors/ # Palo Alto, Cisco
+│   └── cloud-connectors/    # AWS, Azure, GCP
+├── ui/
+│   ├── dashboard/           # React/Vue dashboard
+│   ├── alerting/            # Real-time alert UI
+│   └── reporting/           # Analytics reports
+└── ops/
+    ├── monitoring/          # Prometheus configs
+    ├── logging/             # ELK configs
+    ├── alerting/            # Alert rules
+    └── ci-cd/               # GitHub Actions
