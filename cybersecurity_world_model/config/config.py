@@ -1,10 +1,16 @@
 """Configuration management for Cybersecurity World Model."""
 
 import os
-import yaml
 from pathlib import Path
 from typing import Any, Dict, Optional
 from cybersecurity_world_model.exceptions import ConfigurationError
+
+# Try to import yaml, make it optional
+try:
+    import yaml
+    YAML_AVAILABLE = True
+except ImportError:
+    YAML_AVAILABLE = False
 
 
 class Config:
@@ -83,6 +89,12 @@ class Config:
         Raises:
             ConfigurationError: If file cannot be read or parsed
         """
+        if not YAML_AVAILABLE:
+            raise ConfigurationError(
+                "PyYAML is required to load YAML configuration files. "
+                "Install it with: pip install pyyaml"
+            )
+        
         try:
             path = Path(config_path)
             if not path.exists():
@@ -182,6 +194,12 @@ class Config:
         Args:
             config_path: Path to save configuration file
         """
+        if not YAML_AVAILABLE:
+            raise ConfigurationError(
+                "PyYAML is required to save YAML configuration files. "
+                "Install it with: pip install pyyaml"
+            )
+        
         path = Path(config_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         
