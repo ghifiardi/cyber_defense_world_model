@@ -259,3 +259,4 @@ class AttackGraphGenerator:
         paths_with_scores.sort(key=lambda x: x['score'], reverse=True)
         return paths_with_scores[:top_n]
 
+

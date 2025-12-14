@@ -65,3 +65,4 @@ class NetworkSimulator:
         state = np.random.randn(self.feature_dim)
         return state
 
+

@@ -81,3 +81,4 @@ class AttackDynamicsModel(nn.Module):
             logger.error(f"Error predicting next state: {e}")
             raise ModelError(f"Failed to predict next state: {e}") from e
 
+

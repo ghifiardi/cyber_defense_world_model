@@ -102,3 +102,4 @@ class CyberStateEncoder(nn.Module):
             logger.error(f"Error encoding network state: {e}")
             raise ModelError(f"Failed to encode network state: {e}") from e
 
+

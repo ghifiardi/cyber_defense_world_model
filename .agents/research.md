@@ -177,3 +177,4 @@ def optimize_defense_posture(self, network_state, budget_constraint):
         reward = self._calculate_defense_reward(outcome)
 ```
 
+

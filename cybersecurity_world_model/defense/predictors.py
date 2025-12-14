@@ -143,3 +143,4 @@ class TemporalAttackPredictor(nn.Module):
             logger.error(f"Error in attack prediction: {e}")
             raise ModelError(f"Failed to predict attacks: {e}") from e
 
+

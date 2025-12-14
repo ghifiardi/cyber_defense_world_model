@@ -23,6 +23,7 @@ import json
 from cybersecurity_world_model import CyberWorldModel, PredictiveDefenseOrchestrator
 from cybersecurity_world_model.config import Config
 from cybersecurity_world_model.utils.logging import setup_logging
+from cybersecurity_world_model.threat_models import ThreatModelLoader, ThreatScenarioGenerator
 
 # Setup logging
 setup_logging(log_level="INFO")
@@ -94,70 +95,98 @@ def generate_telemetry_data(days: int = 7) -> pd.DataFrame:
 def simulate_attack_scenarios(
     world_model: CyberWorldModel,
     current_state: Dict[str, torch.Tensor],
-    num_scenarios: int = 5
+    num_scenarios: int = 5,
+    use_threat_models: bool = True
 ) -> List[Dict[str, Any]]:
     """
     Use the world model to simulate potential attack scenarios.
     These are attacks that haven't happened yet but could occur.
+    
+    Args:
+        world_model: CyberWorldModel instance
+        current_state: Current network state
+        num_scenarios: Number of scenarios to generate
+        use_threat_models: Whether to use threat model use cases
     """
     print("\n" + "="*70)
     print("SIMULATING POTENTIAL ATTACK SCENARIOS")
     print("="*70)
     
     scenarios = []
+    threat_generator = None
     
-    # Generate multiple attack scenarios
-    for i in range(num_scenarios):
+    # Load threat models if requested
+    if use_threat_models:
+        try:
+            threat_generator = ThreatScenarioGenerator()
+            threat_scenarios = threat_generator.generate_multiple_scenarios(max_scenarios=num_scenarios)
+            print(f"Loaded {len(threat_scenarios)} scenarios from threat models")
+        except Exception as e:
+            print(f"Warning: Could not load threat models: {e}")
+            print("Falling back to default scenarios")
+            threat_scenarios = []
+    else:
+        threat_scenarios = []
+    
+    # Generate scenarios from threat models or fallback to defaults
+    scenario_sources = threat_scenarios if threat_scenarios else [None] * num_scenarios
+    
+    for i, threat_scenario in enumerate(scenario_sources[:num_scenarios]):
         print(f"\n--- Scenario {i+1} ---")
         
-        # Define potential attack sequence based on MITRE ATT&CK
-        # This represents a potential kill chain that could unfold
-        attack_sequence = []
-        
-        # Scenario variations
-        if i == 0:
-            # Scenario 1: Phishing -> Initial Access -> Execution -> Persistence
-            attack_sequence = [
-                {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Email reconnaissance and target research'},
-                {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Phishing email with malicious attachment'},
-                {'action': 2, 'name': 'EXECUTION', 'description': 'Malware execution from attachment'},
-                {'action': 3, 'name': 'PERSISTENCE', 'description': 'Registry modification for persistence'}
-            ]
-        elif i == 1:
-            # Scenario 2: Web Exploit -> Privilege Escalation -> Lateral Movement
-            attack_sequence = [
-                {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Web application scanning'},
-                {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Exploit public-facing web application'},
-                {'action': 4, 'name': 'PRIVILEGE_ESCALATION', 'description': 'Exploit local privilege escalation'},
-                {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Move to internal network segments'}
-            ]
-        elif i == 2:
-            # Scenario 3: Credential Theft -> Discovery -> Collection -> Exfiltration
-            attack_sequence = [
-                {'action': 6, 'name': 'CREDENTIAL_ACCESS', 'description': 'Credential dumping from memory'},
-                {'action': 7, 'name': 'DISCOVERY', 'description': 'Network and system discovery'},
-                {'action': 9, 'name': 'COLLECTION', 'description': 'Data collection from multiple sources'},
-                {'action': 10, 'name': 'EXFILTRATION', 'description': 'Data exfiltration to external server'}
-            ]
-        elif i == 3:
-            # Scenario 4: Ransomware attack chain
-            attack_sequence = [
-                {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Network mapping and vulnerability scanning'},
-                {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'RDP brute force or exploit'},
-                {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Spread across network'},
-                {'action': 12, 'name': 'IMPACT', 'description': 'Encrypt files and demand ransom'}
-            ]
+        if threat_scenario:
+            # Use threat model scenario
+            attack_sequence = threat_scenario['attack_sequence']
+            scenario_name = threat_scenario.get('scenario_name', f"Scenario {i+1}")
+            print(f"Source: {threat_scenario.get('use_case_id', 'Unknown')} - {scenario_name}")
         else:
-            # Scenario 5: Advanced Persistent Threat (APT) style
-            attack_sequence = [
-                {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Long-term reconnaissance'},
-                {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Spear-phishing campaign'},
-                {'action': 3, 'name': 'PERSISTENCE', 'description': 'Multiple persistence mechanisms'},
-                {'action': 5, 'name': 'DEFENSE_EVASION', 'description': 'Obfuscation and evasion techniques'},
-                {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Stealthy lateral movement'},
-                {'action': 9, 'name': 'COLLECTION', 'description': 'Long-term data collection'},
-                {'action': 10, 'name': 'EXFILTRATION', 'description': 'Staged exfiltration'}
-            ]
+            # Fallback to default scenarios
+            attack_sequence = []
+            
+            # Scenario variations (fallback)
+            if i == 0:
+                # Scenario 1: Phishing -> Initial Access -> Execution -> Persistence
+                attack_sequence = [
+                    {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Email reconnaissance and target research'},
+                    {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Phishing email with malicious attachment'},
+                    {'action': 2, 'name': 'EXECUTION', 'description': 'Malware execution from attachment'},
+                    {'action': 3, 'name': 'PERSISTENCE', 'description': 'Registry modification for persistence'}
+                ]
+            elif i == 1:
+                # Scenario 2: Web Exploit -> Privilege Escalation -> Lateral Movement
+                attack_sequence = [
+                    {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Web application scanning'},
+                    {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Exploit public-facing web application'},
+                    {'action': 4, 'name': 'PRIVILEGE_ESCALATION', 'description': 'Exploit local privilege escalation'},
+                    {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Move to internal network segments'}
+                ]
+            elif i == 2:
+                # Scenario 3: Credential Theft -> Discovery -> Collection -> Exfiltration
+                attack_sequence = [
+                    {'action': 6, 'name': 'CREDENTIAL_ACCESS', 'description': 'Credential dumping from memory'},
+                    {'action': 7, 'name': 'DISCOVERY', 'description': 'Network and system discovery'},
+                    {'action': 9, 'name': 'COLLECTION', 'description': 'Data collection from multiple sources'},
+                    {'action': 10, 'name': 'EXFILTRATION', 'description': 'Data exfiltration to external server'}
+                ]
+            elif i == 3:
+                # Scenario 4: Ransomware attack chain
+                attack_sequence = [
+                    {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Network mapping and vulnerability scanning'},
+                    {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'RDP brute force or exploit'},
+                    {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Spread across network'},
+                    {'action': 12, 'name': 'IMPACT', 'description': 'Encrypt files and demand ransom'}
+                ]
+            else:
+                # Scenario 5: Advanced Persistent Threat (APT) style
+                attack_sequence = [
+                    {'action': 0, 'name': 'RECONNAISSANCE', 'description': 'Long-term reconnaissance'},
+                    {'action': 1, 'name': 'INITIAL_ACCESS', 'description': 'Spear-phishing campaign'},
+                    {'action': 3, 'name': 'PERSISTENCE', 'description': 'Multiple persistence mechanisms'},
+                    {'action': 5, 'name': 'DEFENSE_EVASION', 'description': 'Obfuscation and evasion techniques'},
+                    {'action': 8, 'name': 'LATERAL_MOVEMENT', 'description': 'Stealthy lateral movement'},
+                    {'action': 9, 'name': 'COLLECTION', 'description': 'Long-term data collection'},
+                    {'action': 10, 'name': 'EXFILTRATION', 'description': 'Staged exfiltration'}
+                ]
         
         # Simulate the attack scenario
         try:
@@ -169,9 +198,17 @@ def simulate_attack_scenarios(
                 'events': current_state['events'].clone()
             }
             
+            # Convert attack sequence format if needed
+            if attack_sequence and isinstance(attack_sequence[0], dict) and 'action' in attack_sequence[0]:
+                # Already in correct format
+                formatted_sequence = attack_sequence
+            else:
+                # Convert to format expected by world model
+                formatted_sequence = [{'action': step.get('action', step)} for step in attack_sequence]
+            
             states, predictions = world_model.simulate_attack_scenario(
                 state_copy,
-                attack_sequence
+                formatted_sequence
             )
             
             # Extract key information from predictions
@@ -195,7 +232,9 @@ def simulate_attack_scenarios(
                 'threat_levels': threat_levels,
                 'vulnerabilities': [float(pred['new_vulnerabilities'].mean()) for pred in predictions],
                 'anomalous_flows': [float(pred['anomalous_flows'].mean()) for pred in predictions],
-                'timeline': []
+                'timeline': [],
+                'source': threat_scenario.get('source', 'default') if threat_scenario else 'default',
+                'use_case_id': threat_scenario.get('scenario_id', '') if threat_scenario else ''
             }
             
             # Build timeline

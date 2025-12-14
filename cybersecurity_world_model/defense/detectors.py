@@ -120,3 +120,4 @@ class BehavioralAnomalyDetector(nn.Module):
         except Exception as e:
             logger.warning(f"Error updating memory bank: {e}")
 
+
