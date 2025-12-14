@@ -175,14 +175,26 @@ def simulate_attack_scenarios(
             )
             
             # Extract key information from predictions
+            # Normalize threat levels to 0-1 range using sigmoid
+            def normalize_threat(threat_val):
+                """Normalize threat level to 0-1 range using sigmoid"""
+                import torch.nn.functional as F
+                return float(F.sigmoid(torch.tensor(threat_val)).item())
+            
+            threat_levels = []
+            for pred in predictions:
+                raw_threat = pred['threat_level'].mean()
+                normalized = normalize_threat(raw_threat)
+                threat_levels.append(normalized)
+            
             scenario_info = {
                 'scenario_id': i + 1,
                 'attack_sequence': attack_sequence,
                 'num_steps': len(attack_sequence),
                 'predicted_states': len(states),
-                'threat_levels': [pred['threat_level'].mean() for pred in predictions],
-                'vulnerabilities': [pred['new_vulnerabilities'].mean() for pred in predictions],
-                'anomalous_flows': [pred['anomalous_flows'].mean() for pred in predictions],
+                'threat_levels': threat_levels,
+                'vulnerabilities': [float(pred['new_vulnerabilities'].mean()) for pred in predictions],
+                'anomalous_flows': [float(pred['anomalous_flows'].mean()) for pred in predictions],
                 'timeline': []
             }
             
@@ -190,7 +202,8 @@ def simulate_attack_scenarios(
             current_time = datetime.now()
             for j, step in enumerate(attack_sequence):
                 if j < len(predictions):
-                    threat_level = float(predictions[j]['threat_level'].mean())
+                    raw_threat = float(predictions[j]['threat_level'].mean())
+                    threat_level = normalize_threat(raw_threat)
                     scenario_info['timeline'].append({
                         'time': current_time + timedelta(hours=j*2),  # Assume 2 hours per step
                         'phase': step['name'],
@@ -206,8 +219,10 @@ def simulate_attack_scenarios(
             print(f"Attack Chain: {' -> '.join([s['name'] for s in attack_sequence])}")
             print(f"Predicted Steps: {len(attack_sequence)}")
             avg_threat = np.mean(scenario_info['threat_levels'])
-            print(f"Average Threat Level: {avg_threat:.2f}")
-            print(f"Estimated Timeline: {scenario_info['timeline'][0]['time']} to {scenario_info['timeline'][-1]['time']}")
+            threat_percentage = avg_threat * 100
+            print(f"Average Threat Level: {threat_percentage:.1f}%")
+            if scenario_info['timeline']:
+                print(f"Estimated Timeline: {scenario_info['timeline'][0]['time']} to {scenario_info['timeline'][-1]['time']}")
             
         except Exception as e:
             print(f"Error simulating scenario {i+1}: {e}")
@@ -250,8 +265,8 @@ def generate_proactive_recommendations(
         'long_term': []
     }
     
-    # Analyze scenarios
-    high_threat_scenarios = [s for s in scenarios if np.mean(s['threat_levels']) > 0.7]
+    # Analyze scenarios - use normalized threat levels (0-1 range)
+    high_threat_scenarios = [s for s in scenarios if s.get('threat_levels') and np.mean(s['threat_levels']) > 0.5]
     
     if high_threat_scenarios:
         recommendations['immediate'].append(
@@ -306,10 +321,14 @@ def visualize_prediction_timeline(scenarios: List[Dict[str, Any]]):
     for scenario in scenarios:
         print(f"\n--- Scenario {scenario['scenario_id']} ---")
         print(f"Attack Chain: {' -> '.join([s['name'] for s in scenario['attack_sequence']])}")
+        avg_threat = np.mean(scenario['threat_levels']) if scenario['threat_levels'] else 0
+        print(f"Overall Threat Level: {avg_threat*100:.1f}%")
         print("\nTimeline:")
         for event in scenario['timeline']:
-            print(f"  {event['time'].strftime('%Y-%m-%d %H:%M')} - {event['phase']}")
-            print(f"    Threat Level: {event['threat_level']:.2f}")
+            threat_pct = event['threat_level'] * 100
+            threat_emoji = "🔴" if threat_pct > 70 else "🟠" if threat_pct > 40 else "🟡" if threat_pct > 20 else "🟢"
+            print(f"  {event['time'].strftime('%Y-%m-%d %H:%M')} - {event['phase']} {threat_emoji}")
+            print(f"    Threat Level: {threat_pct:.1f}%")
             print(f"    Description: {event['description']}")
 
 
