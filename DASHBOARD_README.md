@@ -60,11 +60,36 @@ pip install -r requirements.txt
 
 ### Start the Dashboard
 
+**Option 1: Using the run script (Recommended)**
 ```bash
-streamlit run dashboard.py
+./run_dashboard.sh
 ```
 
-The dashboard will open in your default web browser at `http://localhost:8501`
+Or specify a custom port:
+```bash
+./run_dashboard.sh 8503
+```
+
+**Option 2: Direct Streamlit command**
+```bash
+streamlit run dashboard.py --server.port 8502
+```
+
+**Option 3: Custom port**
+```bash
+streamlit run dashboard.py --server.port 8503
+```
+
+The dashboard will open in your default web browser at `http://localhost:8502` (or your specified port)
+
+### Port Configuration
+
+The dashboard uses port **8502** by default (instead of Streamlit's default 8501) to avoid conflicts.
+
+To use a different port:
+- **Method 1**: Pass port as argument: `./run_dashboard.sh 8503`
+- **Method 2**: Use Streamlit flag: `streamlit run dashboard.py --server.port 8503`
+- **Method 3**: Edit `.streamlit/config.toml` and change the port number
 
 ### Dashboard Workflow
 
@@ -151,6 +176,8 @@ The dashboard includes:
 ### Dashboard won't start
 - Ensure Streamlit is installed: `pip install streamlit`
 - Check Python version (3.8+)
+- **Port already in use**: Try a different port: `streamlit run dashboard.py --server.port 8503`
+- Check if another Streamlit instance is running: `lsof -i :8502` (or your port)
 
 ### Models won't initialize
 - Ensure all dependencies are installed
