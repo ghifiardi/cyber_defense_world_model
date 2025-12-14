@@ -228,10 +228,22 @@ class CyberWorldModel:
                     predictions.append(predicted_state)
                     
                     # Update current state (in reality, we'd decode properly)
+                    # Ensure flows tensor has correct shape (batch, seq_len, features)
+                    if len(pred_flows.shape) == 1:
+                        # If 1D, reshape to (1, 1, features) then repeat for seq_len
+                        pred_flows_expanded = pred_flows.unsqueeze(0).unsqueeze(0)  # (1, 1, 20)
+                        pred_flows_expanded = pred_flows_expanded.repeat(1, current_state['flows'].shape[1], 1)  # (1, seq_len, 20)
+                    elif len(pred_flows.shape) == 2:
+                        # If 2D (batch, features), add sequence dimension
+                        pred_flows_expanded = pred_flows.unsqueeze(1)  # (1, 1, 20)
+                        pred_flows_expanded = pred_flows_expanded.repeat(1, current_state['flows'].shape[1], 1)  # (1, seq_len, 20)
+                    else:
+                        pred_flows_expanded = pred_flows
+                    
                     current_state = {
-                        'network': current_state['network'],  # Simplified
-                        'flows': pred_flows.unsqueeze(0) if len(pred_flows.shape) == 1 else pred_flows,
-                        'events': current_state['events']  # Simplified
+                        'network': current_state['network'],  # Keep original network state
+                        'flows': pred_flows_expanded,  # Updated flows with correct shape
+                        'events': current_state['events']  # Keep original events
                     }
                     
                     states.append(current_state)

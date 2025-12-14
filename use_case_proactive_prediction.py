@@ -68,7 +68,7 @@ def generate_telemetry_data(days: int = 7) -> pd.DataFrame:
     timestamps = pd.date_range(
         end=datetime.now(),
         periods=days * 24,  # Hourly data
-        freq='H'
+        freq='h'  # Use lowercase 'h' instead of 'H' to avoid deprecation warning
     )
     
     # Generate 256 features (network metrics, security events, etc.)
@@ -161,8 +161,16 @@ def simulate_attack_scenarios(
         
         # Simulate the attack scenario
         try:
+            # Ensure current_state tensors have correct shapes
+            # Make a copy to avoid modifying the original
+            state_copy = {
+                'network': current_state['network'].clone(),
+                'flows': current_state['flows'].clone(),
+                'events': current_state['events'].clone()
+            }
+            
             states, predictions = world_model.simulate_attack_scenario(
-                current_state,
+                state_copy,
                 attack_sequence
             )
             

@@ -46,7 +46,8 @@ class PredictiveDefenseOrchestrator:
             input_dim=256,
             forecast_horizon=self.config.get('defense.forecast_horizon_hours', 24)
         )
-        self.anomaly_detector = BehavioralAnomalyDetector()
+        # Anomaly detector needs to match telemetry feature dimension (256)
+        self.anomaly_detector = BehavioralAnomalyDetector(feature_dim=256)
         self.attack_graph_generator = AttackGraphGenerator()
         
         # Threat intelligence feeds
