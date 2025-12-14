@@ -138,7 +138,9 @@ def simulate_attack_scenarios(
             # Use threat model scenario
             attack_sequence = threat_scenario['attack_sequence']
             scenario_name = threat_scenario.get('scenario_name', f"Scenario {i+1}")
-            print(f"Source: {threat_scenario.get('use_case_id', 'Unknown')} - {scenario_name}")
+            use_case_id = threat_scenario.get('scenario_id', threat_scenario.get('use_case_id', 'Unknown'))
+            print(f"Source: {use_case_id} - {scenario_name}")
+            print(f"Category: {threat_scenario.get('category', 'N/A')} | Expert: {threat_scenario.get('expert_type', 'N/A')}")
         else:
             # Fallback to default scenarios
             attack_sequence = []
@@ -234,7 +236,10 @@ def simulate_attack_scenarios(
                 'anomalous_flows': [float(pred['anomalous_flows'].mean()) for pred in predictions],
                 'timeline': [],
                 'source': threat_scenario.get('source', 'default') if threat_scenario else 'default',
-                'use_case_id': threat_scenario.get('scenario_id', '') if threat_scenario else ''
+                'use_case_id': threat_scenario.get('scenario_id', threat_scenario.get('use_case_id', '')) if threat_scenario else '',
+                'scenario_name': threat_scenario.get('scenario_name', f'Scenario {i+1}') if threat_scenario else f'Scenario {i+1}',
+                'category': threat_scenario.get('category', '') if threat_scenario else '',
+                'expert_type': threat_scenario.get('expert_type', '') if threat_scenario else ''
             }
             
             # Build timeline
@@ -359,6 +364,10 @@ def visualize_prediction_timeline(scenarios: List[Dict[str, Any]]):
     
     for scenario in scenarios:
         print(f"\n--- Scenario {scenario['scenario_id']} ---")
+        if scenario.get('use_case_id'):
+            print(f"Use Case: {scenario['use_case_id']} - {scenario.get('scenario_name', 'Unknown')}")
+            if scenario.get('category'):
+                print(f"Category: {scenario['category']} | Expert: {scenario.get('expert_type', 'N/A')}")
         print(f"Attack Chain: {' -> '.join([s['name'] for s in scenario['attack_sequence']])}")
         avg_threat = np.mean(scenario['threat_levels']) if scenario['threat_levels'] else 0
         print(f"Overall Threat Level: {avg_threat*100:.1f}%")

@@ -89,7 +89,8 @@ class ThreatScenarioGenerator:
             })
         
         scenario = {
-            'scenario_id': use_case_id,
+            'scenario_id': use_case_id,  # This is the use case ID (UC011, etc.)
+            'use_case_id': use_case_id,   # Alias for compatibility
             'scenario_name': scenario_name or uc.get('title', ''),
             'category': uc.get('category', ''),
             'expert_type': uc.get('expert_type', ''),
